@@ -1,100 +1,15 @@
 import { useState, useEffect } from 'react';
 
-// Estilos CSS básicos para que se vea bien sin complicaciones.
-// Puedes poner esto en tu archivo App.css o index.css
-/*
-body {
-  background-color: #f0f2f5;
-  font-family: sans-serif;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  margin: 0;
-}
-.app-container {
-  background-color: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  width: 90%;
-  max-width: 800px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-}
-.card {
-  display: flex;
-  flex-direction: column;
-}
-.card h2 {
-  font-size: 1.2rem;
-  margin-top: 0;
-  color: #333;
-}
-textarea {
-  width: 100%;
-  height: 200px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  padding: 0.8rem;
-  font-size: 1rem;
-  resize: none;
-}
-.actions {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-}
-button {
-  padding: 0.8rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: bold;
-  transition: background-color 0.2s;
-}
-.submit-btn {
-  background-color: #007bff;
-  color: white;
-}
-.submit-btn:disabled {
-  background-color: #a0a0a0;
-  cursor: not-allowed;
-}
-.clear-btn {
-  background-color: #e9ecef;
-  color: #333;
-}
-.error-message {
-  grid-column: 1 / -1;
-  color: #d93025;
-  background-color: #f8d7da;
-  padding: 1rem;
-  border-radius: 8px;
-  text-align: center;
-}
-*/
-
-
 export default function App() {
   // --- ESTADOS DE LA APLICACIÓN ---
-  // Guarda el texto que el usuario escribe (Colombia)
   const [inputText, setInputText] = useState('');
-  // Guarda el texto traducido que devuelve n8n (Chile)
-  const [outputText, setOutputText] = useState('');
-  // Sirve para mostrar un indicador de "cargando..."
+  const [outputOptions, setOutputOptions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  // Guarda cualquier mensaje de error para mostrarlo al usuario
   const [error, setError] = useState('');
-  // Estado para el tema (claro/oscuro)
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // --- EFECTO PARA APLICAR EL TEMA ---
   useEffect(() => {
-    // Aplicar o quitar la clase 'dark' del documento
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
     } else {
@@ -107,63 +22,73 @@ export default function App() {
     setIsDarkMode(!isDarkMode);
   };
 
+  // --- FUNCIÓN PARA COPIAR TEXTO ---
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      // Opcional: mostrar feedback visual de que se copió
+    } catch (err) {
+      console.error('Error al copiar:', err);
+    }
+  };
+
   // --- FUNCIÓN PRINCIPAL PARA LLAMAR A N8N ---
   const handleAdaptarTexto = async () => {
-    // 1. Validar que el usuario haya escrito algo
     if (!inputText.trim()) {
       setError('Por favor, ingrese un texto para adaptar.');
       return;
     }
 
-    // 2. Preparar para la llamada
     setIsLoading(true);
     setError('');
-    setOutputText('');
+    setOutputOptions([]);
 
-    // 3. Obtener la URL de n8n desde las variables de entorno de Vercel
-    // Esta es la forma correcta y segura de hacerlo.
     const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
 
-    // Verificar si la URL existe. Si no, es un error de configuración.
     if (!webhookUrl) {
       setError('Error de configuración: La URL del webhook no está definida.');
       setIsLoading(false);
       return;
     }
 
-    // 4. Bloque try...catch para manejar errores de red o del servidor
     try {
-      // 5. La llamada FETCH a n8n
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        // Enviamos el texto en el formato que n8n espera: { "texto": "..." }
         body: JSON.stringify({ texto: inputText }),
       });
 
-      // 6. Si la respuesta del servidor no es exitosa (ej: error 404, 500)
       if (!response.ok) {
         throw new Error(`Error del servidor: ${response.statusText}`);
       }
 
-      // 7. Si todo fue bien, convertimos la respuesta a JSON
       const data = await response.json();
 
-      // 8. Actualizamos el estado con el texto adaptado
+      // Simular múltiples opciones para el mockup
+      // En la implementación real, esto vendría del backend
       if (data.texto_adaptado) {
-        setOutputText(data.texto_adaptado);
+        setOutputOptions([
+          {
+            id: 1,
+            title: "Opción 1 (Más estándar y emotiva)",
+            text: data.texto_adaptado
+          },
+          {
+            id: 2,
+            title: "Opción 2 (Con más jerga y confianza)",
+            text: data.texto_adaptado + " ¡Al tiro!"
+          }
+        ]);
       } else {
         throw new Error('La respuesta no contiene el formato esperado.');
       }
 
     } catch (err) {
-      // 9. Si ocurre cualquier error en el proceso, lo mostramos
       console.error("Detalle del error:", err);
       setError(`Hubo un problema al conectar con el servicio. Inténtelo de nuevo. (Detalle: ${err.message})`);
     } finally {
-      // 10. Finalmente, sin importar si hubo éxito o error, dejamos de cargar
       setIsLoading(false);
     }
   };
@@ -171,7 +96,7 @@ export default function App() {
   // --- FUNCIÓN PARA LIMPIAR LOS CAMPOS ---
   const handleLimpiar = () => {
     setInputText('');
-    setOutputText('');
+    setOutputOptions([]);
     setError('');
   };
 
@@ -179,22 +104,26 @@ export default function App() {
   const getThemeStyles = () => {
     if (isDarkMode) {
       return {
-        body: { backgroundColor: '#1a1a1a' },
-        container: { backgroundColor: '#2d2d2d', color: '#ffffff' },
-        card: { backgroundColor: '#3a3a3a', color: '#ffffff' },
-        textarea: { backgroundColor: '#4a4a4a', color: '#ffffff', border: '1px solid #555' },
-        textareaReadonly: { backgroundColor: '#3a3a3a', color: '#ffffff', border: '1px solid #555' },
-        heading: { color: '#ffffff' },
+        body: { backgroundColor: '#1a1a1a', color: '#ffffff' },
+        container: { backgroundColor: '#2d2d2d', color: '#ffffff', border: '1px solid #444' },
+        inputCard: { backgroundColor: '#3a3a3a', color: '#ffffff', border: '1px solid #555' },
+        outputCard: { backgroundColor: '#3a3a3a', color: '#ffffff', border: '1px solid #555' },
+        optionBox: { backgroundColor: '#4a4a4a', color: '#ffffff', border: '1px solid #666' },
+        textarea: { backgroundColor: '#4a4a4a', color: '#ffffff', border: '1px solid #666' },
+        button: { backgroundColor: '#555', color: '#ffffff' },
+        copyButton: { backgroundColor: '#666', color: '#ffffff' },
         error: { backgroundColor: '#4a1a1a', color: '#ff6b6b' }
       };
     } else {
       return {
-        body: { backgroundColor: '#f0f2f5' },
-        container: { backgroundColor: 'white', color: '#333' },
-        card: { backgroundColor: 'white', color: '#333' },
-        textarea: { backgroundColor: 'white', color: '#333', border: '1px solid #ddd' },
-        textareaReadonly: { backgroundColor: '#f8f9fa', color: '#333', border: '1px solid #ddd' },
-        heading: { color: '#333' },
+        body: { backgroundColor: '#f0f2f5', color: '#333' },
+        container: { backgroundColor: '#ffffff', color: '#333', border: '1px solid #ddd' },
+        inputCard: { backgroundColor: '#ffffff', color: '#333', border: '1px solid #ddd' },
+        outputCard: { backgroundColor: '#ffffff', color: '#333', border: '1px solid #ddd' },
+        optionBox: { backgroundColor: '#f8f9fa', color: '#333', border: '1px solid #ddd' },
+        textarea: { backgroundColor: '#ffffff', color: '#333', border: '1px solid #ddd' },
+        button: { backgroundColor: '#e9ecef', color: '#333' },
+        copyButton: { backgroundColor: '#007bff', color: '#ffffff' },
         error: { backgroundColor: '#f8d7da', color: '#d93025' }
       };
     }
@@ -204,142 +133,271 @@ export default function App() {
 
   // --- ESTRUCTURA VISUAL (JSX) ---
   return (
-    <div style={themeStyles.body}>
-      <div className="app-container" style={{ 
-        ...themeStyles.container,
-        padding: '2rem', 
-        borderRadius: '12px', 
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)', 
-        width: '90%', 
-        maxWidth: '800px', 
-        display: 'grid', 
-        gridTemplateColumns: '1fr 1fr', 
-        gap: '2rem',
+    <div style={{ 
+      ...themeStyles.body,
+      minHeight: '100vh',
+      padding: '2rem',
+      fontFamily: 'monospace'
+    }}>
+      <div style={{
+        maxWidth: '800px',
+        margin: '0 auto',
         position: 'relative'
       }}>
         
-        {/* Botón de tema en la esquina superior derecha */}
+        {/* Título del Mockup */}
+        <h1 style={{ 
+          color: themeStyles.body.color,
+          fontSize: '1.2rem',
+          marginBottom: '2rem',
+          fontWeight: 'bold'
+        }}>
+          Mockup (diseño conceptual):
+        </h1>
+
+        {/* Botón de tema */}
         <button
           onClick={toggleTheme}
           style={{
             position: 'absolute',
-            top: '1rem',
-            right: '1rem',
-            width: '48px',
-            height: '48px',
+            top: '-2rem',
+            right: '0',
+            width: '40px',
+            height: '40px',
             borderRadius: '50%',
             border: 'none',
             backgroundColor: isDarkMode ? '#4a4a4a' : '#e9ecef',
             color: isDarkMode ? '#ffffff' : '#333',
             cursor: 'pointer',
-            fontSize: '1.2rem',
+            fontSize: '1rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'all 0.3s ease',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-            zIndex: 10
+            transition: 'all 0.3s ease'
           }}
-          onMouseEnter={(e) => {
-            e.target.style.transform = 'scale(1.1)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = 'scale(1)';
-          }}
-          title={isDarkMode ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
         >
           {isDarkMode ? '☀️' : '🌙'}
         </button>
 
-        {/* Columna Izquierda */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h2 style={{ fontSize: '1.2rem', marginTop: '0', ...themeStyles.heading }}>🇨🇴 Texto de Entrada (Colombia)</h2>
+        {/* Área de Entrada */}
+        <div style={{
+          ...themeStyles.inputCard,
+          padding: '1.5rem',
+          marginBottom: '2rem',
+          borderRadius: '8px',
+          fontFamily: 'monospace'
+        }}>
+          <div style={{ 
+            borderBottom: `1px dashed ${isDarkMode ? '#666' : '#ccc'}`,
+            paddingBottom: '0.5rem',
+            marginBottom: '1rem'
+          }}>
+            <span style={{ color: themeStyles.body.color }}>
+              | CO Texto de Entrada (Colombia)
+            </span>
+          </div>
+          <div style={{ 
+            borderBottom: `1px dashed ${isDarkMode ? '#666' : '#ccc'}`,
+            paddingBottom: '0.5rem',
+            marginBottom: '1rem'
+          }}>
+            <span style={{ color: themeStyles.body.color }}>
+              |
+            </span>
+          </div>
           <textarea
-            style={{ 
-              width: '100%', 
-              height: '200px', 
-              borderRadius: '8px', 
-              padding: '0.8rem', 
-              fontSize: '1rem', 
+            style={{
+              ...themeStyles.textarea,
+              width: '100%',
+              height: '80px',
+              padding: '0.8rem',
+              fontSize: '0.9rem',
+              fontFamily: 'monospace',
               resize: 'none',
-              ...themeStyles.textarea
+              borderRadius: '4px'
             }}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="A la orden, ¿en qué le puedo colaborar?"
+            placeholder="[Área de texto para que el usuario escriba la frase original...]"
             disabled={isLoading}
           />
+          <div style={{ 
+            borderTop: `1px dashed ${isDarkMode ? '#666' : '#ccc'}`,
+            paddingTop: '0.5rem',
+            marginTop: '1rem'
+          }}>
+            <span style={{ color: themeStyles.body.color }}>
+              |
+            </span>
+          </div>
         </div>
 
-        {/* Columna Derecha */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h2 style={{ fontSize: '1.2rem', marginTop: '0', ...themeStyles.heading }}>🇨🇱 Texto Adaptado (Chile)</h2>
-          <textarea
-            style={{ 
-              width: '100%', 
-              height: '200px', 
-              borderRadius: '8px', 
-              padding: '0.8rem', 
-              fontSize: '1rem', 
-              resize: 'none',
-              ...themeStyles.textareaReadonly
-            }}
-            value={isLoading ? "Adaptando..." : outputText}
-            readOnly
-            placeholder="El texto adaptado aparecerá aquí..."
-          />
-        </div>
-
-        {/* Fila de Acciones (Botones) */}
-        <div className="actions" style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+        {/* Botón de Acción */}
+        <div style={{ 
+          textAlign: 'center', 
+          marginBottom: '2rem' 
+        }}>
           <button
-            className="submit-btn"
-            style={{ 
-              padding: '0.8rem 1.5rem', 
-              border: 'none', 
-              borderRadius: '8px', 
-              cursor: 'pointer', 
-              fontSize: '1rem', 
-              fontWeight: 'bold', 
-              transition: 'background-color 0.2s', 
-              backgroundColor: isLoading ? '#a0a0a0' : '#007bff', 
-              color: 'white',
-              minWidth: '160px'
-            }}
             onClick={handleAdaptarTexto}
             disabled={isLoading}
-          >
-            {isLoading ? "Procesando..." : "→ Adaptar a Chileno"}
-          </button>
-          <button
-            className="clear-btn"
-            style={{ 
-              padding: '0.8rem 1.5rem', 
-              border: 'none', 
-              borderRadius: '8px', 
-              cursor: 'pointer', 
-              fontSize: '1rem', 
-              fontWeight: 'bold', 
-              transition: 'background-color 0.2s', 
-              backgroundColor: isDarkMode ? '#4a4a4a' : '#e9ecef', 
-              color: isDarkMode ? '#ffffff' : '#333',
-              minWidth: '100px'
+            style={{
+              backgroundColor: isLoading ? '#666' : '#007bff',
+              color: '#ffffff',
+              border: 'none',
+              padding: '0.8rem 2rem',
+              borderRadius: '4px',
+              fontSize: '1rem',
+              fontFamily: 'monospace',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              transition: 'background-color 0.2s'
             }}
+          >
+            {isLoading ? "Procesando..." : "[ → Adaptar a Chileno ]"}
+          </button>
+        </div>
+
+        {/* Área de Salida */}
+        <div style={{
+          ...themeStyles.outputCard,
+          padding: '1.5rem',
+          borderRadius: '8px',
+          fontFamily: 'monospace'
+        }}>
+          <div style={{ 
+            borderBottom: `1px dashed ${isDarkMode ? '#666' : '#ccc'}`,
+            paddingBottom: '0.5rem',
+            marginBottom: '1rem'
+          }}>
+            <span style={{ color: themeStyles.body.color }}>
+              | CL Texto Adaptado (Chile)
+            </span>
+          </div>
+          <div style={{ 
+            borderBottom: `1px dashed ${isDarkMode ? '#666' : '#ccc'}`,
+            paddingBottom: '0.5rem',
+            marginBottom: '1rem'
+          }}>
+            <span style={{ color: themeStyles.body.color }}>
+              |
+            </span>
+          </div>
+
+          {/* Opciones de Traducción */}
+          {outputOptions.length > 0 ? (
+            outputOptions.map((option, index) => (
+              <div key={option.id} style={{ marginBottom: '2rem' }}>
+                <div style={{
+                  ...themeStyles.optionBox,
+                  padding: '1rem',
+                  borderRadius: '4px',
+                  position: 'relative'
+                }}>
+                  <div style={{ 
+                    borderBottom: `1px solid ${isDarkMode ? '#666' : '#ddd'}`,
+                    paddingBottom: '0.5rem',
+                    marginBottom: '0.8rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <span style={{ 
+                      fontSize: '0.9rem',
+                      fontWeight: 'bold'
+                    }}>
+                      | {option.title}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(option.text)}
+                      style={{
+                        ...themeStyles.copyButton,
+                        border: 'none',
+                        padding: '0.3rem 0.8rem',
+                        borderRadius: '4px',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        fontFamily: 'monospace'
+                      }}
+                    >
+                      [Copiar]
+                    </button>
+                  </div>
+                  <div style={{
+                    borderLeft: `1px solid ${isDarkMode ? '#666' : '#ddd'}`,
+                    paddingLeft: '0.8rem',
+                    fontSize: '0.9rem',
+                    lineHeight: '1.4'
+                  }}>
+                    | {option.text}
+                  </div>
+                  <div style={{ 
+                    borderTop: `1px solid ${isDarkMode ? '#666' : '#ddd'}`,
+                    paddingTop: '0.5rem',
+                    marginTop: '0.8rem'
+                  }}>
+                    <span style={{ color: themeStyles.body.color }}>
+                      |
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div style={{
+              ...themeStyles.optionBox,
+              padding: '2rem',
+              textAlign: 'center',
+              borderRadius: '4px',
+              fontStyle: 'italic',
+              color: isDarkMode ? '#aaa' : '#666'
+            }}>
+              {isLoading ? "Adaptando..." : "[Aquí aparecerían las opciones de traducción...]"}
+            </div>
+          )}
+
+          <div style={{ 
+            borderTop: `1px dashed ${isDarkMode ? '#666' : '#ccc'}`,
+            paddingTop: '0.5rem',
+            marginTop: '1rem'
+          }}>
+            <span style={{ color: themeStyles.body.color }}>
+              |
+            </span>
+          </div>
+        </div>
+
+        {/* Botón Limpiar */}
+        <div style={{ 
+          textAlign: 'center', 
+          marginTop: '2rem' 
+        }}>
+          <button
             onClick={handleLimpiar}
             disabled={isLoading}
+            style={{
+              ...themeStyles.button,
+              border: `1px solid ${isDarkMode ? '#666' : '#ddd'}`,
+              padding: '0.6rem 1.5rem',
+              borderRadius: '4px',
+              fontSize: '0.9rem',
+              fontFamily: 'monospace',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              transition: 'background-color 0.2s'
+            }}
           >
             Limpiar
           </button>
         </div>
 
-        {/* Mensaje de Error (si existe) */}
+        {/* Mensaje de Error */}
         {error && (
-          <div className="error-message" style={{ 
-            gridColumn: '1 / -1', 
-            padding: '1rem', 
-            borderRadius: '8px', 
+          <div style={{
+            ...themeStyles.error,
+            padding: '1rem',
+            borderRadius: '4px',
             textAlign: 'center',
-            ...themeStyles.error
+            marginTop: '2rem',
+            fontFamily: 'monospace',
+            fontSize: '0.9rem'
           }}>
             {error}
           </div>
