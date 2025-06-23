@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // Estilos CSS básicos para que se vea bien sin complicaciones.
 // Puedes poner esto en tu archivo App.css o index.css
@@ -89,6 +89,23 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   // Guarda cualquier mensaje de error para mostrarlo al usuario
   const [error, setError] = useState('');
+  // Estado para el tema (claro/oscuro)
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // --- EFECTO PARA APLICAR EL TEMA ---
+  useEffect(() => {
+    // Aplicar o quitar la clase 'dark' del documento
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
+  // --- FUNCIÓN PARA ALTERNAR EL TEMA ---
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+  };
 
   // --- FUNCIÓN PRINCIPAL PARA LLAMAR A N8N ---
   const handleAdaptarTexto = async () => {
@@ -158,59 +175,176 @@ export default function App() {
     setError('');
   };
 
+  // --- ESTILOS DINÁMICOS BASADOS EN EL TEMA ---
+  const getThemeStyles = () => {
+    if (isDarkMode) {
+      return {
+        body: { backgroundColor: '#1a1a1a' },
+        container: { backgroundColor: '#2d2d2d', color: '#ffffff' },
+        card: { backgroundColor: '#3a3a3a', color: '#ffffff' },
+        textarea: { backgroundColor: '#4a4a4a', color: '#ffffff', border: '1px solid #555' },
+        textareaReadonly: { backgroundColor: '#3a3a3a', color: '#ffffff', border: '1px solid #555' },
+        heading: { color: '#ffffff' },
+        error: { backgroundColor: '#4a1a1a', color: '#ff6b6b' }
+      };
+    } else {
+      return {
+        body: { backgroundColor: '#f0f2f5' },
+        container: { backgroundColor: 'white', color: '#333' },
+        card: { backgroundColor: 'white', color: '#333' },
+        textarea: { backgroundColor: 'white', color: '#333', border: '1px solid #ddd' },
+        textareaReadonly: { backgroundColor: '#f8f9fa', color: '#333', border: '1px solid #ddd' },
+        heading: { color: '#333' },
+        error: { backgroundColor: '#f8d7da', color: '#d93025' }
+      };
+    }
+  };
+
+  const themeStyles = getThemeStyles();
 
   // --- ESTRUCTURA VISUAL (JSX) ---
   return (
-    <div className="app-container" style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)', width: '90%', maxWidth: '800px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-      {/* Columna Izquierda */}
-      <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-        <h2 style={{ fontSize: '1.2rem', marginTop: '0', color: '#333' }}>🇨🇴 Texto de Entrada (Colombia)</h2>
-        <textarea
-          style={{ width: '100%', height: '200px', borderRadius: '8px', border: '1px solid #ddd', padding: '0.8rem', fontSize: '1rem', resize: 'none' }}
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          placeholder="A la orden, ¿en qué le puedo colaborar?"
-          disabled={isLoading}
-        />
-      </div>
-
-      {/* Columna Derecha */}
-      <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-        <h2 style={{ fontSize: '1.2rem', marginTop: '0', color: '#333' }}>🇨🇱 Texto Adaptado (Chile)</h2>
-        <textarea
-          style={{ width: '100%', height: '200px', borderRadius: '8px', border: '1px solid #ddd', padding: '0.8rem', fontSize: '1rem', resize: 'none', backgroundColor: '#f8f9fa' }}
-          value={isLoading ? "Adaptando..." : outputText}
-          readOnly
-          placeholder="El texto adaptado aparecerá aquí..."
-        />
-      </div>
-
-      {/* Fila de Acciones (Botones) */}
-      <div className="actions" style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+    <div style={themeStyles.body}>
+      <div className="app-container" style={{ 
+        ...themeStyles.container,
+        padding: '2rem', 
+        borderRadius: '12px', 
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)', 
+        width: '90%', 
+        maxWidth: '800px', 
+        display: 'grid', 
+        gridTemplateColumns: '1fr 1fr', 
+        gap: '2rem',
+        position: 'relative'
+      }}>
+        
+        {/* Botón de tema en la esquina superior derecha */}
         <button
-          className="submit-btn"
-          style={{ padding: '0.8rem 1.5rem', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', fontWeight: 'bold', transition: 'background-color 0.2s', backgroundColor: isLoading ? '#a0a0a0' : '#007bff', color: 'white' }}
-          onClick={handleAdaptarTexto}
-          disabled={isLoading}
+          onClick={toggleTheme}
+          style={{
+            position: 'absolute',
+            top: '1rem',
+            right: '1rem',
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            border: 'none',
+            backgroundColor: isDarkMode ? '#4a4a4a' : '#e9ecef',
+            color: isDarkMode ? '#ffffff' : '#333',
+            cursor: 'pointer',
+            fontSize: '1.2rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+            zIndex: 10
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.transform = 'scale(1.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.transform = 'scale(1)';
+          }}
+          title={isDarkMode ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
         >
-          {isLoading ? "Procesando..." : "→ Adaptar a Chileno"}
+          {isDarkMode ? '☀️' : '🌙'}
         </button>
-        <button
-          className="clear-btn"
-          style={{ padding: '0.8rem 1.5rem', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', fontWeight: 'bold', transition: 'background-color 0.2s', backgroundColor: '#e9ecef', color: '#333' }}
-          onClick={handleLimpiar}
-          disabled={isLoading}
-        >
-          Limpiar
-        </button>
-      </div>
 
-      {/* Mensaje de Error (si existe) */}
-      {error && (
-        <div className="error-message" style={{ gridColumn: '1 / -1', color: '#d93025', backgroundColor: '#f8d7da', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
-          {error}
+        {/* Columna Izquierda */}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+          <h2 style={{ fontSize: '1.2rem', marginTop: '0', ...themeStyles.heading }}>🇨🇴 Texto de Entrada (Colombia)</h2>
+          <textarea
+            style={{ 
+              width: '100%', 
+              height: '200px', 
+              borderRadius: '8px', 
+              padding: '0.8rem', 
+              fontSize: '1rem', 
+              resize: 'none',
+              ...themeStyles.textarea
+            }}
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            placeholder="A la orden, ¿en qué le puedo colaborar?"
+            disabled={isLoading}
+          />
         </div>
-      )}
+
+        {/* Columna Derecha */}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+          <h2 style={{ fontSize: '1.2rem', marginTop: '0', ...themeStyles.heading }}>🇨🇱 Texto Adaptado (Chile)</h2>
+          <textarea
+            style={{ 
+              width: '100%', 
+              height: '200px', 
+              borderRadius: '8px', 
+              padding: '0.8rem', 
+              fontSize: '1rem', 
+              resize: 'none',
+              ...themeStyles.textareaReadonly
+            }}
+            value={isLoading ? "Adaptando..." : outputText}
+            readOnly
+            placeholder="El texto adaptado aparecerá aquí..."
+          />
+        </div>
+
+        {/* Fila de Acciones (Botones) */}
+        <div className="actions" style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <button
+            className="submit-btn"
+            style={{ 
+              padding: '0.8rem 1.5rem', 
+              border: 'none', 
+              borderRadius: '8px', 
+              cursor: 'pointer', 
+              fontSize: '1rem', 
+              fontWeight: 'bold', 
+              transition: 'background-color 0.2s', 
+              backgroundColor: isLoading ? '#a0a0a0' : '#007bff', 
+              color: 'white',
+              minWidth: '160px'
+            }}
+            onClick={handleAdaptarTexto}
+            disabled={isLoading}
+          >
+            {isLoading ? "Procesando..." : "→ Adaptar a Chileno"}
+          </button>
+          <button
+            className="clear-btn"
+            style={{ 
+              padding: '0.8rem 1.5rem', 
+              border: 'none', 
+              borderRadius: '8px', 
+              cursor: 'pointer', 
+              fontSize: '1rem', 
+              fontWeight: 'bold', 
+              transition: 'background-color 0.2s', 
+              backgroundColor: isDarkMode ? '#4a4a4a' : '#e9ecef', 
+              color: isDarkMode ? '#ffffff' : '#333',
+              minWidth: '100px'
+            }}
+            onClick={handleLimpiar}
+            disabled={isLoading}
+          >
+            Limpiar
+          </button>
+        </div>
+
+        {/* Mensaje de Error (si existe) */}
+        {error && (
+          <div className="error-message" style={{ 
+            gridColumn: '1 / -1', 
+            padding: '1rem', 
+            borderRadius: '8px', 
+            textAlign: 'center',
+            ...themeStyles.error
+          }}>
+            {error}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
